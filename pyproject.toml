@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ml-implementations"
+version = "0.1.0"
+description = ""
+authors = ["Jarkko Lagus <jalagus@gmail.com>"]
+readme = "README.md"
+packages = [{include = "ml_implementations"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.0.1"
+numpy = "^1.25.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
