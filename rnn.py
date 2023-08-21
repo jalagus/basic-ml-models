@@ -31,6 +31,55 @@ class SimpleRNN(nn.Module):
         return y_t
     
 
+class LSTM(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(LSTM, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+
+        # Initialize weights and biases
+        self.Why = nn.Parameter(torch.randn(hidden_size, output_size))
+        self.bias_y = nn.Parameter(torch.zeros(1, output_size))
+
+        self.Wf = nn.Parameter(torch.randn(input_size, hidden_size))
+        self.Uf = nn.Parameter(torch.randn(hidden_size, hidden_size))
+        self.bias_f = nn.Parameter(torch.zeros(1, hidden_size))
+
+        self.Wi = nn.Parameter(torch.randn(input_size, hidden_size))
+        self.Ui = nn.Parameter(torch.randn(hidden_size, hidden_size))
+        self.bias_i = nn.Parameter(torch.zeros(1, hidden_size))
+
+        self.Wc = nn.Parameter(torch.randn(input_size, hidden_size))
+        self.Uc = nn.Parameter(torch.randn(hidden_size, hidden_size))
+        self.bias_c = nn.Parameter(torch.zeros(1, hidden_size))
+
+        self.Wo = nn.Parameter(torch.randn(input_size, hidden_size))
+        self.Uo = nn.Parameter(torch.randn(hidden_size, hidden_size))
+        self.bias_o = nn.Parameter(torch.zeros(1, hidden_size))
+
+
+    def forward(self, x):
+        batch_size, seq_length, _ = x.size()
+        
+        # Initialize hidden state
+        h_t = torch.zeros(batch_size, self.hidden_size)
+        C_t = torch.zeros(batch_size, self.hidden_size)
+        
+        for t in range(seq_length):
+            x_t = x[:, t, :]
+
+            f_t = torch.sigmoid(torch.mm(x_t, self.Wf) + torch.mm(h_t, self.Uf) + self.bias_f)
+            i_t = torch.sigmoid(torch.mm(x_t, self.Wi) + torch.mm(h_t, self.Ui) + self.bias_i)
+            o_t = torch.sigmoid(torch.mm(x_t, self.Wo) + torch.mm(h_t, self.Uo) + self.bias_o)
+            Ch_t = torch.sigmoid(torch.mm(x_t, self.Wc) + torch.mm(h_t, self.Uc) + self.bias_c)
+
+            C_t = f_t * C_t + i_t * Ch_t
+            h_t = o_t * torch.tanh(C_t)
+            
+        y_t = torch.mm(h_t, self.Why) + self.bias_y
+        return y_t
+
 # Simple demo
 if __name__ == "__main__":
     dataset = []
@@ -44,14 +93,14 @@ if __name__ == "__main__":
     train_dataset = normalized_data[:,:-1,None]
 
     # Init the RNN for single input and single output
-    model = SimpleRNN(1, 50, 1)
+    model = LSTM(1, 50, 1)
 
     # Define loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Training loop
-    num_epochs = 5000
+    num_epochs = 1000
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         outputs = model(train_dataset)
@@ -59,12 +108,12 @@ if __name__ == "__main__":
         loss.backward()
         optimizer.step()
         
-        if (epoch+1) % 500 == 0:
+        if (epoch+1) % 100 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
     with torch.inference_mode():
         # Predict outside training domain
-        x = 9
+        x = 10
         test_instance = torch.tensor(np.linspace(x, x + 10, 11) / 10, dtype=torch.float32) 
         print(test_instance)
         norm_test_instance = (test_instance - dataset.mean()) / dataset.std()
